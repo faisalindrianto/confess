@@ -3,6 +3,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import app from './app'
 import user from './module/user'
+import team from './module/team'
 
 Vue.use(Vuex)
 
@@ -14,5 +15,6 @@ export default new Vuex.Store({
     appConfig: appConfigStoreModule,
     app,
     user,
+    team,
   },
 })

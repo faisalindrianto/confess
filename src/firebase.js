@@ -21,8 +21,6 @@ const db = firebase.firestore()
 const auth = firebase.auth()
 const storage = firebase.storage()
 
-db.settings({ timestampsInSnapshots: true })
-
 // export utils/refs
 export {
   db,

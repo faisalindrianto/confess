@@ -15,7 +15,7 @@
 
 <script>
 // eslint-disable-next-line object-curly-newline
-import { computed } from '@vue/composition-api'
+import { computed, onMounted } from '@vue/composition-api'
 // eslint-disable-next-line import/no-unresolved
 import useAppConfig from '@core/@app-config/useAppConfig'
 import { useRouter } from '@core/utils'
@@ -23,9 +23,11 @@ import { useLayout } from '@core/layouts/composable/useLayout'
 
 // Layouts
 import useDynamicVh from '@core/utils/useDynamicVh'
+import store from '@/store'
 import LayoutContentVerticalNav from '@/layouts/variants/content/vertical-nav/LayoutContentVerticalNav.vue'
 import LayoutContentHorizontalNav from '@/layouts/variants/content/horizontal-nav/LayoutContentHorizontalNav.vue'
 import LayoutBlank from '@/layouts/variants/blank/LayoutBlank.vue'
+import vtoast from '@/components/misc/vtoast.vue'
 
 // Dynamic vh
 
@@ -34,6 +36,10 @@ export default {
     LayoutContentVerticalNav,
     LayoutContentHorizontalNav,
     LayoutBlank,
+    vtoast,
+  },
+  mounted() {
+    this.$root.vtoast = this.$refs.vtoast
   },
   setup() {
     const { route } = useRouter()
@@ -47,6 +53,10 @@ export default {
       if (route.value.meta.layout === 'content') return `layout-content-${appContentLayoutNav.value}-nav`
 
       return null
+    })
+
+    onMounted(() => {
+      store.dispatch('initApp')
     })
 
     useDynamicVh()

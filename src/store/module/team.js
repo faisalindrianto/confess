@@ -1,6 +1,5 @@
 import { createHelpers } from 'vuex-map-fields'
 import { db } from '@/firebase'
-import { reject, resolve } from 'core-js/fn/promise'
 
 const { getTeamFields, updateTeamFields } = createHelpers({
   getterType: 'getTeamFields',
@@ -23,29 +22,34 @@ export default {
   actions: {
     getUserTeams(state, payload) {
       return new Promise((resolve, reject) => {
-        db.collection('users').doc(payload).collection('teams').get().then(teams => {
-          resolve(teams)
-        }).catch(err => {
-          reject(err)
-        })
+        db.collection('users').doc(payload).collection('teams').get()
+          .then(teams => {
+            resolve(teams)
+          })
+          .catch(err => {
+            reject(err)
+          })
       })
     },
     getUserSchedules(state, payload) {
       return new Promise((resolve, reject) => {
-        db.collection('users').doc(payload).collection('schedule').get().then(schedule => {
-          resolve(schedule)
-        }).catch(err => {
-          reject(err)
-        })
+        db.collection('users').doc(payload).collection('schedule').get()
+          .then(schedule => {
+            resolve(schedule)
+          })
+          .catch(err => {
+            reject(err)
+          })
       })
     },
     getTeamDetail(state, payload) {
       return new Promise((resolve, reject) => {
         db.collection('teams').doc(payload).get().then(data => {
           resolve(data)
-        }).catch(err => {
-          reject(err)
         })
+          .catch(err => {
+            reject(err)
+          })
       })
     },
     createTeam(state, payload) {
@@ -61,15 +65,18 @@ export default {
       return new Promise((resolve, reject) => {
         db.collection('teams').doc(payload).delete().then(result => {
           resolve(result)
-        }).catch(err => {
-          reject(err)
         })
+          .catch(err => {
+            reject(err)
+          })
       })
     },
+    /* eslint-disable no-unused-vars */
     joinTeam(state, payload) {
       return new Promise((resolve, reject) => {
         // gak tau males
       })
     },
+    /* eslint-enable no-unused-vars */
   },
 }

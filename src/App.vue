@@ -27,7 +27,6 @@ import store from '@/store'
 import LayoutContentVerticalNav from '@/layouts/variants/content/vertical-nav/LayoutContentVerticalNav.vue'
 import LayoutContentHorizontalNav from '@/layouts/variants/content/horizontal-nav/LayoutContentHorizontalNav.vue'
 import LayoutBlank from '@/layouts/variants/blank/LayoutBlank.vue'
-import vtoast from '@/components/misc/vtoast.vue'
 
 // Dynamic vh
 
@@ -36,10 +35,6 @@ export default {
     LayoutContentVerticalNav,
     LayoutContentHorizontalNav,
     LayoutBlank,
-    vtoast,
-  },
-  mounted() {
-    this.$root.vtoast = this.$refs.vtoast
   },
   setup() {
     const { route } = useRouter()

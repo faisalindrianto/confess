@@ -37,12 +37,105 @@
         </div>
         <div
           v-if="showSidebar"
-          class="sidebar pa-4"
+          class="sidebar"
         >
-          Sidebar
+          <v-tabs
+            v-model="currentTab"
+            fixed-tabs
+            class="rounded-tr"
+          >
+            <v-tab class="text-capitalize">
+              Informasi
+            </v-tab>
+            <v-tab class="text-capitalize">
+              Chat
+            </v-tab>
+            <v-tab class="text-capitalize">
+              Dokumen
+            </v-tab>
+          </v-tabs>
         </div>
       </div>
-      <div class="bottom pa-4 d-flex justify-end">
+      <div class="bottom pa-4 d-flex justify-space-between">
+        <div>
+          <v-icon>
+            {{ icons.mdiInformationOutline }}
+          </v-icon>
+        </div>
+        <div class="d-flex align-center">
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                x-small
+                :color="isMicrophoneActive ? 'success' : 'secondary'"
+                class="mx-2"
+                v-bind="attrs"
+                v-on="on"
+                @click="isMicrophoneActive = !isMicrophoneActive"
+              >
+                <v-icon
+                  dark
+                >
+                  {{ isMicrophoneActive ? icons.mdiMicrophone : icons.mdiMicrophoneOff }}
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Status Mikrofon</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                x-small
+                class="mx-2"
+                v-bind="attrs"
+                v-on="on"
+                @click="currentTab = 1"
+              >
+                <v-icon>
+                  {{ icons.mdiMessageOutline }}
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Akses Chat</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                x-small
+                class="mx-2"
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon>
+                  {{ icons.mdiMonitorScreenshot }}
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Bagikan Layar</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                x-small
+                color="error"
+                class="mx-2"
+                v-bind="attrs"
+                v-on="on"
+              >
+                <v-icon
+                  dark
+                >
+                  {{ icons.mdiPhoneHangup }}
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Tinggalkan Konferensi</span>
+          </v-tooltip>
+        </div>
         <v-slide-x-reverse-transition
           mode="out-in"
         >
@@ -60,7 +153,10 @@
 
 <script>
 import { ref } from '@vue/composition-api'
-import { mdiMenu, mdiClose } from '@mdi/js'
+import {
+  mdiMenu, mdiClose, mdiMicrophone, mdiMicrophoneOff, mdiInformationOutline,
+  mdiMessageOutline, mdiPhoneHangup, mdiMonitorScreenshot,
+} from '@mdi/js'
 
 export default {
   props: {
@@ -70,14 +166,24 @@ export default {
     },
   },
   setup() {
-    const showSidebar = ref(false)
+    const showSidebar = ref(true)
+    const isMicrophoneActive = ref(true)
+    const currentTab = ref(0)
 
     return {
       showSidebar,
+      isMicrophoneActive,
+      currentTab,
 
       icons: {
         mdiMenu,
         mdiClose,
+        mdiMicrophone,
+        mdiMicrophoneOff,
+        mdiMessageOutline,
+        mdiPhoneHangup,
+        mdiMonitorScreenshot,
+        mdiInformationOutline,
       },
     }
   },

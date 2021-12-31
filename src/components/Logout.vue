@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import Vue from 'vue'
 import { ref } from '@vue/composition-api'
 import store from '@/store'
 import router from '@/router'
@@ -53,10 +54,10 @@ export default {
     const logout = () => {
       store.dispatch('logout').then(() => {
         showLogoutDialog.value = false
-        router.replace('/')
-        console.log('berhasil logout')
-      }).catch(err => {
-        console.log('gagal logout', err)
+        router.go()
+        Vue.$toast.success('Berhasil Logout!')
+      }).catch(() => {
+        Vue.$toast.error('Gagal Logout!')
       })
     }
 

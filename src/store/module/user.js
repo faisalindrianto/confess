@@ -42,6 +42,10 @@ export default {
             state.commit('updateUserField', { path: 'notifications', value: data.docs.map(el => el.data()) })
           }
         })
+
+        state.dispatch('getUserTeams', user.uid).then(result => {
+          state.commit('setUserTeams', result)
+        })
       }
     },
     signInWithGoogle(state) {

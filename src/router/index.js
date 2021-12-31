@@ -12,6 +12,7 @@ const routes = [
     meta: {
       layout: 'blank',
       pageTitle: 'Home',
+      requiresAuth: false,
     },
   },
   {
@@ -21,6 +22,7 @@ const routes = [
     meta: {
       layout: 'blank',
       pageTitle: 'Confess Teams',
+      requiresAuth: true,
     },
   },
   {
@@ -30,6 +32,7 @@ const routes = [
     meta: {
       layout: 'blank',
       pageTitle: 'Confess Teams',
+      requiresAuth: true,
     },
     props: true,
   },
@@ -59,9 +62,16 @@ const router = new VueRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  const hasUserData = localStorage.getItem('userData')
   window.document.title = to.meta && to.meta.pageTitle ? `${to.meta.pageTitle} - Confess - Conference Information System` : 'Confess - Conference Information System'
-  store.commit('app/setNextRoute', to)
-  next()
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  if (requiresAuth && !hasUserData) {
+    store.commit('app/setNextRoute', to)
+    Vue.$toast.error('Harap login terlebih dahulu!')
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router

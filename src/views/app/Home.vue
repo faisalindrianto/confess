@@ -164,25 +164,7 @@
                 <v-card-text>
                   Gabung ke tim yang sudah dibuat teman dengan menginputkan kode di bawah. Minta kode akses ke teman jika belum punya kode.
                 </v-card-text>
-                <div class="px-4">
-                  <v-text-field
-                    v-model="teamData.teamCode"
-                    label="Kode Tim"
-                    dense
-                    placeholder="Input Kode Tim"
-                    outlined
-                    hide-details
-                  ></v-text-field>
-                </div>
-                <div class="px-4 py-4">
-                  <v-btn
-                    block
-                    color="primary"
-                    class="text-capitalize py-5"
-                  >
-                    Gabung Tim
-                  </v-btn>
-                </div>
+                <join-team />
               </v-card>
             </v-tab-item>
           </v-tabs-items>
@@ -206,12 +188,14 @@ import store from '@/store'
 import homelottie from '@/assets/images/lottie/home.json'
 import Logout from '@/components/Logout.vue'
 import CreateTeam from '@/components/forms/CreateTeam.vue'
+import JoinTeam from '@/components/forms/JoinTeam.vue'
 
 export default {
   components: {
     Lottie,
     Logout,
     CreateTeam,
+    JoinTeam,
   },
   setup() {
     const confessTeamTab = ref(0)

@@ -159,6 +159,7 @@
                     </v-tooltip>
                   </div>
                   <v-card
+                    v-if="team.latest_schedule"
                     elevation="0"
                     outlined
                     class="mt-4 pa-2"
@@ -172,10 +173,20 @@
                         {{ icons.mdiMessageVideo }}
                       </v-icon>
                       <div>
-                        <h5>Meeting Siji</h5>
-                        <small>Deskripsi Meeting</small>
+                        <h5>{{ team.latest_schedule.name }}</h5>
+                        <small>{{ formatDateId(team.latest_schedule.start_date) }} • {{ team.latest_schedule.start_time }} - {{ team.latest_schedule.end_time }} </small>
                       </div>
                     </div>
+                  </v-card>
+                  <v-card
+                    v-else
+                    outlined
+                    class="mt-4"
+                    min-height="32px"
+                  >
+                    <v-card-text class="py-4">
+                      Tidak Ada Jadwal Meeting
+                    </v-card-text>
                   </v-card>
                 </v-card-text>
               </v-card>
@@ -246,6 +257,7 @@ import { ref, computed } from '@vue/composition-api'
 import Lottie from 'vue-lottie'
 import { mdiDotsVertical, mdiMessageVideo } from '@mdi/js'
 import { createHelpers } from 'vuex-map-fields'
+import { formatDateId } from '@core/utils/filter'
 import useVuetify from '@core/utils/vuetify'
 import teamslottie from '@/assets/images/lottie/teams.json'
 import Logout from '@/components/Logout.vue'
@@ -308,6 +320,7 @@ export default {
       editData,
       showEdit,
       editTeam,
+      formatDateId,
 
       icons: {
         mdiDotsVertical,

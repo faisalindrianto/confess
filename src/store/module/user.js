@@ -46,6 +46,10 @@ export default {
         state.dispatch('getUserTeams', user.uid).then(result => {
           state.commit('setUserTeams', result)
         })
+
+        state.dispatch('getUserSchedules', user.uid).then(result => {
+          state.commit('setUserSchedules', result)
+        })
       }
     },
     signInWithGoogle(state) {

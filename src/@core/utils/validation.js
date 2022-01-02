@@ -1,6 +1,6 @@
 import { isEmpty } from './index'
 
-export const required = value => (value && value.length ? true : 'This field is required')
+export const required = value => (value && value.length ? true : 'Kolom ini harus diisi')
 export const emailValidator = value => {
   if (isEmpty(value)) {
     return true
@@ -13,7 +13,7 @@ export const emailValidator = value => {
     return value.every(val => re.test(String(val)))
   }
 
-  return re.test(String(value)) || 'The Email field must be a valid email'
+  return re.test(String(value)) || 'Alamat email tidak valid'
 }
 
 export const passwordValidator = password => {

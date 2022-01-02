@@ -47,6 +47,15 @@ const routes = [
     props: true,
   },
   {
+    path: '/test/upload',
+    name: 'upload-test',
+    component: () => import('@/views/test/UploadTest.vue'),
+    meta: {
+      layout: 'blank',
+      pageTitle: 'Upload Test',
+    },
+  },
+  {
     path: '*',
     redirect: 'error-404',
   },

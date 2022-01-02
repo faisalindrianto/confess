@@ -1,3 +1,5 @@
+import { format, parseISO } from 'date-fns'
+import { id } from 'date-fns/locale'
 import { isToday } from './index'
 
 export const kFormatter = (num, fraction = 2) => (num > 999 ? `${(num / 1000).toFixed(fraction)}k` : num)
@@ -34,6 +36,12 @@ export const formatDate = (value, formatting = { month: 'short', day: 'numeric',
   if (!value) return value
 
   return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
+}
+
+export const formatDateId = date => {
+  if (!date) return date
+
+  return format(parseISO(date), 'EEEE, d MMMM yyyy', { locale: id })
 }
 
 /**

@@ -58,6 +58,7 @@
               </v-card-text>
             </div>
             <div class="d-flex flex-column pa-4">
+              <span class="mb-2 text-body-2 text-right">Kode Tim : <b>{{ id }}</b></span>
               <v-btn
                 color="primary"
                 outlined
@@ -70,7 +71,10 @@
           </div>
         </v-card>
         <v-row>
-          <v-col cols="2">
+          <v-col
+            cols="3"
+            lg="2"
+          >
             <v-sheet rounded="lg">
               <v-list rounded>
                 <v-list-item-group
@@ -83,7 +87,7 @@
                   >
                     <v-list-item-content>
                       <v-list-item-title>
-                        Jadwal Temu
+                        Konferensi
                       </v-list-item-title>
                     </v-list-item-content>
                   </v-list-item>
@@ -135,7 +139,7 @@
                       id,
                     })"
                   >
-                    Hapus Tim
+                    Keluar Tim
                   </v-btn>
                 </v-list-item>
                 <v-list-item
@@ -152,7 +156,7 @@
                       id,
                     })"
                   >
-                    Keluar Tim
+                    Hapus Tim
                   </v-btn>
                 </v-list-item>
               </v-list>
@@ -168,10 +172,11 @@
                 <v-sheet
                   min-height="40vh"
                   rounded="lg"
+                  class="pb-2"
                 >
                   <div class="d-flex justify-space-between">
                     <v-card-title class="font-weight-bold">
-                      Jadwal
+                      Jadwal Konferensi
                     </v-card-title>
                     <div class="pa-4">
                       <v-btn
@@ -183,20 +188,35 @@
                       </v-btn>
                     </div>
                   </div>
-                  <div class="px-4">
+                  <div
+                    v-if="loadingConference"
+                    class="px-4 d-flex align-center justify-center"
+                    style="height: 200px"
+                  >
+                    <v-progress-circular
+                      indeterminate
+                      size="36"
+                      color="primary"
+                    ></v-progress-circular>
+                  </div>
+                  <div
+                    v-else
+                    class="px-4"
+                  >
                     <v-card
-                      v-for="i in 4"
-                      :key="i"
+                      v-for="conf in conferenceList"
+                      :key="conf.id"
                       outlined
                       class="mb-2 mt-2"
-                      @click="$refs.detail.show(i)"
+                      @click="$refs.detail.show(id, conf.id)"
                     >
                       <div class="d-flex flex-wrap justify-space-between">
                         <v-card-title class="text-h6 font-weight-bold">
-                          Konferensi {{ i }}
+                          {{ conf.name }}
                         </v-card-title>
                         <div class="pa-4">
                           <v-btn
+                            v-if="!isJoined(conf.participants)"
                             color="primary"
                             outlined
                             rounded
@@ -208,10 +228,10 @@
                       <div class="d-flex flex-wrap justify-space-between">
                         <div>
                           <v-card-text>
-                            Deskripsi Lorem ipsum dolor sit amet consectetur.
+                            {{ conf.description }}
                           </v-card-text>
                           <v-card-text>
-                            Dimulai : 10 Januari 2022 12:12 • Sampai : 11 Januari 2022 12:12
+                            Dimulai : {{ formatDateId(conf.start_date) }} {{ conf.start_time }} • Sampai : {{ formatDateId(conf.end_date) }} {{ conf.end_time }}
                           </v-card-text>
                         </div>
                         <div class="px-4 pb-4">
@@ -223,8 +243,8 @@
                             :class="rootThemeClasses"
                           >
                             <v-tooltip
-                              v-for="j in 4"
-                              :key="j"
+                              v-for="participant in conf.participants"
+                              :key="participant.uid"
                               top
                             >
                               <template v-slot:activator="{ on, attrs }">
@@ -233,10 +253,10 @@
                                   size="36"
                                   v-on="on"
                                 >
-                                  <v-img src="@/assets/images/avatars/1.png"></v-img>
+                                  <v-img :src="participant.avatar"></v-img>
                                 </v-avatar>
                               </template>
-                              <span>Nama Member</span>
+                              <span>{{ participant.name }}</span>
                             </v-tooltip>
                           </div>
                         </div>
@@ -254,7 +274,81 @@
                     Dokumen
                   </v-card-title>
                   <v-card-text>
-                    Dokumen berasal dari konferensi yang sudah selesai.
+                    Dokumen yang diupload dari konferensi yang sudah selesai.
+                  </v-card-text>
+                  <v-card-text class="pt-2 pb-6">
+                    <v-expansion-panels>
+                      <v-expansion-panel
+                        v-for="j in 5"
+                        :key="j"
+                      >
+                        <v-expansion-panel-header>
+                          <div>
+                            <span class="text-heading-2 font-weight-bold d-block mb-1">Konferensi {{ j }}</span>
+                            <small>1232s23 • Tanggal 123123</small>
+                          </div>
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                          <v-row>
+                            <v-col
+                              v-for="i in 6"
+                              :key="i"
+                              cols="12"
+                              md="6"
+                            >
+                              <v-hover #default="{ hover }">
+                                <v-card outlined>
+                                  <div class="d-flex align-center pa-2">
+                                    <v-avatar
+                                      size="40"
+                                      class="mr-2"
+                                    >
+                                      <v-img :src="require('@/assets/images/avatars/1.png')"></v-img>
+                                    </v-avatar>
+                                    <div>
+                                      <div class="d-flex align-center">
+                                        <h5 class="mr-2">
+                                          Dokumen Name
+                                        </h5>
+                                      </div>
+                                      <small>Dokumen Details</small>
+                                    </div>
+                                    <v-menu
+                                      bottom
+                                      left
+                                    >
+                                      <template v-slot:activator="{ on, attrs }">
+                                        <v-slide-x-reverse-transition
+                                          mode="out-in"
+                                        >
+                                          <v-icon
+                                            v-show="hover"
+                                            size="20px"
+                                            v-bind="attrs"
+                                            class="ml-auto"
+                                            v-on="on"
+                                          >
+                                            {{ icons.mdiDotsVertical }}
+                                          </v-icon>
+                                        </v-slide-x-reverse-transition>
+                                      </template>
+                                      <v-list>
+                                        <v-list-item>
+                                          Lihat Detail
+                                        </v-list-item>
+                                        <v-list-item>
+                                          Hapus Dokumen
+                                        </v-list-item>
+                                      </v-list>
+                                    </v-menu>
+                                  </div>
+                                </v-card>
+                              </v-hover>
+                            </v-col>
+                          </v-row>
+                        </v-expansion-panel-content>
+                      </v-expansion-panel>
+                    </v-expansion-panels>
                   </v-card-text>
                 </v-sheet>
               </v-tab-item>
@@ -271,13 +365,13 @@
                       <v-btn
                         color="primary"
                         rounded
-                        @click="copyLink()"
+                        @click="$refs.addMembers.show()"
                       >
                         Tambah Anggota
                       </v-btn>
                     </div>
                   </div>
-                  <v-card-text>
+                  <v-card-text class="pt-2">
                     <v-row>
                       <v-col
                         v-for="member in teamDetails.members"
@@ -293,7 +387,7 @@
                                 size="40"
                                 class="mr-2"
                               >
-                                <v-img src="@/assets/images/avatars/1.png"></v-img>
+                                <v-img :src="member.avatar"></v-img>
                               </v-avatar>
                               <div>
                                 <div class="d-flex align-center">
@@ -384,7 +478,10 @@
         <v-card-title class="font-weight-bold my-4">
           Buat Konferensi
         </v-card-title>
-        <conference-form />
+        <conference-form
+          :team-id="id"
+          @success="showCreateConference = false; fetchConference()"
+        />
       </v-card>
     </v-bottom-sheet>
 
@@ -399,7 +496,15 @@
       @success="kickMember ? fetchDetails() : $router.replace('/teams')"
     />
     <logout ref="logout" />
-    <conference-details ref="detail" />
+    <conference-details
+      ref="detail"
+      @refetch="fetchConference()"
+    />
+    <add-members
+      ref="addMembers"
+      :team-id="id"
+      @success="fetchDetails()"
+    />
   </v-app>
 </template>
 
@@ -408,6 +513,7 @@ import Vue from 'vue'
 import { ref, computed, onMounted } from '@vue/composition-api'
 import { mdiDotsVertical } from '@mdi/js'
 import useVuetify from '@core/utils/vuetify'
+import { formatDateId } from '@core/utils/filter'
 import store from '@/store'
 import router from '@/router'
 import CreateTeam from '@/components/forms/CreateTeam.vue'
@@ -416,6 +522,7 @@ import LeaveTeam from '@/views/teams/LeaveTeam.vue'
 import Logout from '@/components/Logout.vue'
 import ConferenceForm from './ConferenceForm.vue'
 import ConferenceDetails from './ConferenceDetails.vue'
+import AddMembers from './AddMembers.vue'
 
 export default {
   components: {
@@ -425,6 +532,7 @@ export default {
     Logout,
     ConferenceForm,
     ConferenceDetails,
+    AddMembers,
   },
   props: {
     id: {
@@ -443,7 +551,9 @@ export default {
     const { rootThemeClasses } = useVuetify()
     const teamDetails = ref({})
     const loadingDetails = ref(false)
-    const currentTab = ref(0)
+    const conferenceList = ref([])
+    const loadingConference = ref(false)
+    const currentTab = ref(1)
     const showEdit = ref(false)
     const userData = computed(() => store.state.user.userData)
     const isMyTeam = host => {
@@ -476,7 +586,6 @@ export default {
                 },
                 members,
               }
-              console.log(teamDetails.value)
               loadingDetails.value = false
             })
           })
@@ -490,9 +599,25 @@ export default {
         router.replace('/teams')
       })
     }
+    const fetchConference = () => {
+      loadingConference.value = true
+      store.dispatch('getConferenceList', {
+        team_id: props.id,
+      }).then(result => {
+        loadingConference.value = false
+        conferenceList.value = result
+      })
+    }
+
+    const isJoined = members => {
+      if (members && members.length) return members.some(el => el.uid === userData.value.uid)
+
+      return false
+    }
 
     onMounted(() => {
       fetchDetails()
+      fetchConference()
     })
 
     return {
@@ -502,11 +627,16 @@ export default {
       currentTab,
       showEdit,
       fetchDetails,
+      fetchConference,
       isMyTeam,
       isHost,
       kickMember,
       idKick,
       showCreateConference,
+      conferenceList,
+      loadingConference,
+      formatDateId,
+      isJoined,
 
       icons: {
         mdiDotsVertical,

@@ -91,7 +91,7 @@
                 class="mx-2"
                 v-bind="attrs"
                 v-on="on"
-                @click="currentTab = 1"
+                @click="showSidebar = true; currentTab = 1;"
               >
                 <v-icon>
                   {{ icons.mdiMessageOutline }}

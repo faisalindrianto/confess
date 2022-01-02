@@ -46,7 +46,7 @@
               >
                 <template v-slot:activator="{ on, attrs }">
                   <v-text-field
-                    :value="formatDate(formData.start_date)"
+                    :value="formatDateId(formData.start_date)"
                     clearable
                     label="Tanggal Mulai"
                     readonly
@@ -111,7 +111,7 @@
               >
                 <template v-slot:activator="{ on, attrs }">
                   <v-text-field
-                    :value="formatDate(formData.end_date)"
+                    :value="formatDateId(formData.end_date)"
                     clearable
                     label="Tanggal Berakhir"
                     readonly
@@ -165,11 +165,13 @@
       <v-btn
         block
         color="primary"
+        :loading="loading"
         @click="submitConference()"
       >
-        Buat Konferensi
+        {{ editMode ? 'Update Konferensi' : 'Buat Konferensi' }}
       </v-btn>
       <v-btn
+        v-if="!editMode"
         block
         color="primary"
         outlined
@@ -184,15 +186,20 @@
 
 <script>
 import Vue from 'vue'
-import { ref, computed } from '@vue/composition-api'
+import { ref, computed, onMounted } from '@vue/composition-api'
+import { formatDateId } from '@core/utils/filter'
 import { format, parseISO } from 'date-fns'
-import { id } from 'date-fns/locale'
 import firebase from 'firebase/app'
 import { required } from '@core/utils/validation'
 import store from '@/store'
 
 export default {
   props: {
+    teamId: {
+      type: String,
+      default: null,
+      required: true,
+    },
     confId: {
       type: String,
       default: null,
@@ -202,7 +209,7 @@ export default {
       default: null,
     },
   },
-  setup() {
+  setup(props, { emit }) {
     const createConferenceForm = ref(null)
     const userData = computed(() => store.state.user.userData)
     const formData = ref({
@@ -213,20 +220,62 @@ export default {
       end_date: format(parseISO(new Date().toISOString()), 'yyyy-MM-dd'),
       end_time: '12:00',
       created_at: firebase.firestore.FieldValue.serverTimestamp(),
-      created_by: userData.uid,
+      created_by: userData.value.uid,
     })
     const loading = ref(false)
     const showStartDate = ref(false)
     const showStartTime = ref(false)
     const showEndDate = ref(false)
     const showEndTime = ref(false)
-    const formatDate = date => (date ? format(parseISO(date), 'EEEE, d MMMM yyyy', { locale: id }) : '')
+    const editMode = computed(() => props.confId !== null)
+
+    onMounted(() => {
+      if (props.value) {
+        formData.value = props.value
+      }
+    })
 
     const submitConference = () => {
       if (createConferenceForm.value.validate()) {
-        console.log('submit conference!', formData.value)
+        loading.value = true
+
+        if (!props.confId) {
+          store.dispatch('createConference', {
+            team_id: props.teamId,
+            data: formData.value,
+          }).then(() => {
+            Vue.$toast.success('Jadwal berhasil dibuat!')
+            emit('success')
+            loading.value = false
+          }).catch(() => {
+            Vue.$toast.error('Terjadi kesalahan')
+            emit('failed')
+            loading.value = false
+          })
+        } else {
+          store.dispatch('updateConference', {
+            team_id: props.teamId,
+            conf_id: props.confId,
+            data: {
+              name: formData.value.name,
+              description: formData.value.description,
+              start_time: formData.value.start_time,
+              start_date: formData.value.start_date,
+              end_date: formData.value.end_date,
+              end_time: formData.value.end_time,
+            },
+          }).then(() => {
+            Vue.$toast.success('Konferensi berhasil diubah!')
+            emit('success')
+            loading.value = false
+          }).catch(() => {
+            Vue.$toast.error('Terjadi kesalahan')
+            emit('failed')
+            loading.value = false
+          })
+        }
       } else {
-        Vue.$toast.warning('Data tidak valid')
+        Vue.$toast.warning('Isi form dengan benar terlebih dahulu')
       }
     }
     const resetForm = () => {
@@ -255,7 +304,8 @@ export default {
       showStartTime,
       showEndDate,
       showEndTime,
-      formatDate,
+      formatDateId,
+      editMode,
     }
   },
 }

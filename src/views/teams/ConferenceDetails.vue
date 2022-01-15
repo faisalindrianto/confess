@@ -153,6 +153,16 @@
               >
                 Berhalangan Hadir
               </v-btn>
+              <v-btn
+                v-if="isJoined"
+                color="primary"
+                rounded
+                block
+                class="mt-4 mb-4"
+                :loading="loadingJoin"
+              >
+                Mulai Konferensi
+              </v-btn>
             </v-card-text>
           </v-tab-item>
           <v-tab-item>

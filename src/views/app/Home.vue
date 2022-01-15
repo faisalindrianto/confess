@@ -30,6 +30,7 @@
                 block
                 color="primary"
                 class="text-capitalize py-5 mb-4"
+                :loading="loading"
                 @click="createConference()"
               >
                 Confess Sekarang
@@ -173,6 +174,38 @@
     </v-row>
 
     <logout ref="logout" />
+
+    <v-dialog
+      v-model="showSetNameDialog"
+      max-width="500"
+    >
+      <v-card>
+        <v-card-title>
+          Atur Nama
+        </v-card-title>
+        <v-card-text>
+          Kenalan dulu yuk!
+        </v-card-text>
+        <div class="px-4 pb-4">
+          <v-form
+            lazy-validation
+            @submit.prevent="setName()"
+          >
+            <v-text-field
+              v-model="userName"
+              dense
+              placeholder="Input Nama"
+              outlined
+              hide-details
+              :append-icon="userName.length > 3 ? icons.mdiCheck : ''"
+              :rules="[required]"
+              :loading="loadingSetName"
+              @click:append="setName()"
+            ></v-text-field>
+          </v-form>
+        </div>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -202,12 +235,17 @@ export default {
     const { router } = useRouter()
     const isAuthenticated = computed(() => store.state.user.isAuthenticated)
     const userData = computed(() => store.state.user.userData)
+    const loading = computed(() => store.state.webrtc.loadingMeeting)
     const teamData = ref({
       teamCode: '',
     })
     const confCode = ref('')
     const confForm = ref(null)
     const confLoading = ref(false)
+    const showSetNameDialog = ref(false)
+    const saveRoute = ref('')
+    const userName = ref('')
+    const loadingSetName = ref(false)
 
     const signIn = nextRoute => {
       const routeList = {
@@ -248,17 +286,43 @@ export default {
     }
 
     const createConference = () => {
-      router.push({ name: 'con', params: { id: 'dev-ind-212' } })
+      if (localStorage.getItem('userName')) {
+        store.dispatch('createMeting').then(code => {
+          router.push({ name: 'con', params: { id: code } })
+        })
+      } else {
+        saveRoute.value = 'create'
+        showSetNameDialog.value = true
+      }
     }
 
     const joinConf = () => {
-      if (confForm.value.validate()) {
-        confLoading.value = true
-        setTimeout(() => {
-          router.push({ name: 'con', params: { id: confCode.value } })
-          confLoading.value = false
-        }, 5000)
+      if (localStorage.getItem('userName')) {
+        if (confForm.value.validate()) {
+          confLoading.value = true
+          setTimeout(() => {
+            router.push({ name: 'con', params: { id: confCode.value } })
+            confLoading.value = false
+          }, 5000)
+        }
+      } else {
+        saveRoute.value = 'join'
+        showSetNameDialog.value = true
       }
+    }
+
+    const setName = () => {
+      loadingSetName.value = true
+      localStorage.setItem('userName', userName.value)
+      setTimeout(() => {
+        loadingSetName.value = false
+        showSetNameDialog.value = false
+        if (saveRoute.value === 'create') {
+          createConference()
+        } else if (saveRoute.value === 'join') {
+          joinConf()
+        }
+      }, 2000)
     }
 
     return {
@@ -276,6 +340,12 @@ export default {
       joinConf,
       confForm,
       confLoading,
+      loading,
+      showSetNameDialog,
+      saveRoute,
+      userName,
+      loadingSetName,
+      setName,
 
       signIn,
       createConference,

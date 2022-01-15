@@ -35,6 +35,12 @@
         {{ chat.content }}
       </v-list-item>
     </v-list>
+    <v-card
+      outlined
+      class="mt-8 pa-4"
+    >
+      <session-end team-id="PRVdve" />
+    </v-card>
   </v-container>
 </template>
 
@@ -43,16 +49,20 @@ import firebase from 'firebase/app'
 import { ref, onMounted } from '@vue/composition-api'
 import store from '@/store'
 import { db } from '@/firebase'
+import SessionEnd from '@/components/SessionEnd.vue'
 
 export default {
+  components: {
+    SessionEnd,
+  },
   setup() {
     const files = ref([])
     const submit = () => {
       if (files.value.length) {
         files.value.forEach(async file => {
           store.dispatch('uploadDocument', {
-            team_id: 'teams-1',
-            conf_id: 'okeoke',
+            team_id: 'PRVdve',
+            conf_id: 'svs-sqw-212',
             file,
           }).then(result => {
             console.log('success upload', result)

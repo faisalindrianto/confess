@@ -1,5 +1,6 @@
 import { createHelpers } from 'vuex-map-fields'
 import firebase from 'firebase/app'
+import short from 'short-uuid'
 import { db, auth } from '@/firebase'
 
 const { getUserField, updateUserField } = createHelpers({
@@ -46,10 +47,10 @@ export default {
         state.dispatch('getUserTeams', user.uid).then(result => {
           state.commit('setUserTeams', result)
         })
+      }
 
-        state.dispatch('getUserSchedules', user.uid).then(result => {
-          state.commit('setUserSchedules', result)
-        })
+      if (!localStorage.getItem('deviceId')) {
+        localStorage.setItem('deviceId', short.generate())
       }
     },
     signInWithGoogle(state) {
@@ -105,6 +106,22 @@ export default {
       return new Promise((resolve, reject) => {
         db.collection('users').doc(payload).get().then(data => {
           resolve(data)
+        })
+          .catch(err => {
+            reject(err)
+          })
+      })
+    },
+    updateUserData(state, payload) {
+      return new Promise((resolve, reject) => {
+        db.collection('users').doc(payload.uid).update(payload.data).then(result => {
+          const userData = {
+            ...state.state.userData,
+            ...payload.data,
+          }
+          localStorage.setItem('userData', JSON.stringify(userData))
+          state.commit('updateUserField', { path: 'userData', value: userData })
+          resolve(result)
         })
           .catch(err => {
             reject(err)

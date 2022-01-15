@@ -22,6 +22,13 @@
       </div>
       <v-spacer />
       <v-btn
+        class="ml-2"
+        outlined
+        @click="$refs.updateProfile.show()"
+      >
+        Update Profile
+      </v-btn>
+      <v-btn
         class="ml-4"
         outlined
         @click="$refs.logout.show()"
@@ -134,7 +141,7 @@
                     outlined
                     rounded
                     block
-                    @click="$refs.leaveTeam.show({
+                    @click="kickMember = false; $refs.leaveTeam.show({
                       ...teamDetails,
                       id,
                     })"
@@ -277,22 +284,25 @@
                     Dokumen yang diupload dari konferensi yang sudah selesai.
                   </v-card-text>
                   <v-card-text class="pt-2 pb-6">
-                    <v-expansion-panels>
+                    <v-expansion-panels
+                      v-if="!loadingDocuments"
+                      multiple
+                    >
                       <v-expansion-panel
-                        v-for="j in 5"
-                        :key="j"
+                        v-for="document in documentList"
+                        :key="document.id"
                       >
                         <v-expansion-panel-header>
                           <div>
-                            <span class="text-heading-2 font-weight-bold d-block mb-1">Konferensi {{ j }}</span>
-                            <small>1232s23 • Tanggal 123123</small>
+                            <span class="text-heading-2 font-weight-bold d-block mb-1">{{ document.confDetail.name }}</span>
+                            <small>{{ document.id }} • {{ document.confDetail.created_at.toDate() }}</small>
                           </div>
                         </v-expansion-panel-header>
                         <v-expansion-panel-content>
                           <v-row>
                             <v-col
-                              v-for="i in 6"
-                              :key="i"
+                              v-for="doc in document.documents"
+                              :key="doc.id"
                               cols="12"
                               md="6"
                             >
@@ -301,17 +311,23 @@
                                   <div class="d-flex align-center pa-2">
                                     <v-avatar
                                       size="40"
-                                      class="mr-2"
+                                      class="mr-4"
+                                      color="primary"
                                     >
-                                      <v-img :src="require('@/assets/images/avatars/1.png')"></v-img>
+                                      <v-icon
+                                        color="white"
+                                        size="28px"
+                                      >
+                                        {{ icons.mdiFileDocument }}
+                                      </v-icon>
                                     </v-avatar>
                                     <div>
                                       <div class="d-flex align-center">
-                                        <h5 class="mr-2">
-                                          Dokumen Name
+                                        <h5 class="mr-2 text-truncate">
+                                          {{ doc.name }}
                                         </h5>
                                       </div>
-                                      <small>Dokumen Details</small>
+                                      <small>{{ getFileSize(doc.size) }}</small>
                                     </div>
                                     <v-menu
                                       bottom
@@ -405,7 +421,7 @@
                                 <small>{{ member.email }}</small>
                               </div>
                               <v-menu
-                                v-if="!isHost(member.uid)"
+                                v-if="!isHost(member.uid) && teamDetails.host && isMyTeam(teamDetails.host.uid)"
                                 bottom
                                 left
                               >
@@ -424,7 +440,7 @@
                                     </v-icon>
                                   </v-slide-x-reverse-transition>
                                 </template>
-                                <v-list>
+                                <v-list v-if="isMyTeam(teamDetails.host.uid)">
                                   <v-list-item
                                     @click="kickMember = true; idKick = member.uid; $refs.leaveTeam.show({
                                       ...teamDetails,
@@ -496,6 +512,7 @@
       @success="kickMember ? fetchDetails() : $router.replace('/teams')"
     />
     <logout ref="logout" />
+    <update-profile ref="updateProfile" />
     <conference-details
       ref="detail"
       @refetch="fetchConference()"
@@ -511,7 +528,7 @@
 <script>
 import Vue from 'vue'
 import { ref, computed, onMounted } from '@vue/composition-api'
-import { mdiDotsVertical } from '@mdi/js'
+import { mdiDotsVertical, mdiFileDocument, mdiFileImage } from '@mdi/js'
 import useVuetify from '@core/utils/vuetify'
 import { formatDateId } from '@core/utils/filter'
 import store from '@/store'
@@ -520,6 +537,7 @@ import CreateTeam from '@/components/forms/CreateTeam.vue'
 import DeleteTeam from '@/views/teams/DeleteTeam.vue'
 import LeaveTeam from '@/views/teams/LeaveTeam.vue'
 import Logout from '@/components/Logout.vue'
+import UpdateProfile from '@/components/UpdateProfile.vue'
 import ConferenceForm from './ConferenceForm.vue'
 import ConferenceDetails from './ConferenceDetails.vue'
 import AddMembers from './AddMembers.vue'
@@ -533,6 +551,7 @@ export default {
     ConferenceForm,
     ConferenceDetails,
     AddMembers,
+    UpdateProfile,
   },
   props: {
     id: {
@@ -599,6 +618,43 @@ export default {
         router.replace('/teams')
       })
     }
+
+    const documentList = ref([])
+    const loadingDocuments = ref(false)
+    const fetchDocuments = () => {
+      loadingDocuments.value = true
+      store.dispatch('getDocumentList', {
+        team_id: props.id,
+      }).then(async result => {
+        await Promise.all(result.docs.map(async doc => {
+          const data = doc.data()
+          const indexConf = documentList.value.findIndex(el => el.id === data.conf_id)
+          if (indexConf === -1) {
+            const con = conferenceList.value.filter(el => el.id === data.conf_id)
+            if (con.length) {
+              documentList.value.push({
+                id: data.conf_id,
+                confDetail: con[0],
+                documents: [{
+                  ...data,
+                  id: doc.id,
+                }],
+              })
+            }
+          } else {
+            documentList.value[indexConf].documents.push({
+              ...data,
+              id: doc.id,
+            })
+          }
+        }))
+        console.log(documentList.value)
+        loadingDocuments.value = false
+      }).catch(() => {
+        loadingDocuments.value = false
+      })
+    }
+
     const fetchConference = () => {
       loadingConference.value = true
       store.dispatch('getConferenceList', {
@@ -606,6 +662,7 @@ export default {
       }).then(result => {
         loadingConference.value = false
         conferenceList.value = result
+        fetchDocuments()
       })
     }
 
@@ -613,6 +670,17 @@ export default {
       if (members && members.length) return members.some(el => el.uid === userData.value.uid)
 
       return false
+    }
+
+    const getFileSize = size => {
+      const mb = Math.round((size / 1000000) * 100) / 100
+      if (mb < 1) {
+        const kb = Math.round((mb * 1000) * 100) / 100
+
+        return `${kb} kb`
+      }
+
+      return `${mb} mb`
     }
 
     onMounted(() => {
@@ -637,9 +705,15 @@ export default {
       loadingConference,
       formatDateId,
       isJoined,
+      fetchDocuments,
+      documentList,
+      loadingDocuments,
+      getFileSize,
 
       icons: {
         mdiDotsVertical,
+        mdiFileDocument,
+        mdiFileImage,
       },
     }
   },

@@ -22,6 +22,13 @@
       </div>
       <v-spacer />
       <v-btn
+        class="ml-2"
+        outlined
+        @click="$refs.updateProfile.show()"
+      >
+        Update Profile
+      </v-btn>
+      <v-btn
         class="ml-4"
         outlined
         @click="$refs.logout.show()"
@@ -152,7 +159,7 @@
                           size="36"
                           v-on="on"
                         >
-                          <v-img src="@/assets/images/avatars/1.png"></v-img>
+                          <v-img :src="member.avatar"></v-img>
                         </v-avatar>
                       </template>
                       <span>{{ member.name }}</span>
@@ -248,6 +255,7 @@
       <logout ref="logout" />
       <leave-team ref="leaveTeam" />
       <delete-team ref="deleteTeam" />
+      <update-profile ref="updateProfile" />
     </v-main>
   </v-app>
 </template>
@@ -261,6 +269,7 @@ import { formatDateId } from '@core/utils/filter'
 import useVuetify from '@core/utils/vuetify'
 import teamslottie from '@/assets/images/lottie/teams.json'
 import Logout from '@/components/Logout.vue'
+import UpdateProfile from '@/components/UpdateProfile.vue'
 import LeaveTeam from '@/views/teams/LeaveTeam.vue'
 import DeleteTeam from '@/views/teams/DeleteTeam.vue'
 import CreateTeam from '@/components/forms/CreateTeam.vue'
@@ -280,6 +289,7 @@ export default {
     JoinTeam,
     LeaveTeam,
     DeleteTeam,
+    UpdateProfile,
   },
   computed: {
     ...mapTeamFields(['teamList']),

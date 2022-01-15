@@ -47,12 +47,31 @@ const routes = [
     props: true,
   },
   {
+    path: '/fess/:teamid/:meetid',
+    name: 'fess',
+    component: () => import('@/views/app/Conference.vue'),
+    meta: {
+      layout: 'blank',
+      pageTitle: 'Conference',
+    },
+    props: true,
+  },
+  {
     path: '/test/upload',
     name: 'upload-test',
     component: () => import('@/views/test/UploadTest.vue'),
     meta: {
       layout: 'blank',
       pageTitle: 'Upload Test',
+    },
+  },
+  {
+    path: '/test/webrtc',
+    name: 'webrtc-test',
+    component: () => import('@/views/test/WebRtcTest.vue'),
+    meta: {
+      layout: 'blank',
+      pageTitle: 'WebRTC Test',
     },
   },
   {

@@ -47,7 +47,7 @@ const routes = [
     props: true,
   },
   {
-    path: '/fess/:teamid/:meetid',
+    path: '/fess/:teamId/:id',
     name: 'fess',
     component: () => import('@/views/app/Conference.vue'),
     meta: {

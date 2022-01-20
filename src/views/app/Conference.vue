@@ -1,11 +1,31 @@
 <template>
   <div>
     <div class="d-flex justify-space-between py-4 px-8 w-100 align-center">
-      <h6 class="text-h5 font-weight-bold primary--text">
-        confess
-      </h6>
+      <router-link
+        class="text-decoration-none d-flex align-center"
+        to="/"
+      >
+        <h6 class="text-h5 font-weight-bold primary--text mr-2">
+          confess
+        </h6>
+        <v-chip
+          v-if="teamMode"
+          color="primary"
+          small
+        >
+          Teams
+        </v-chip>
+      </router-link>
       <v-chip
+        v-if="teamMode && teamConferenceDetail"
         class="primary--text font-weight-medium white"
+      >
+        {{ teamConferenceDetail.data().name }}
+      </v-chip>
+      <v-chip
+        :color="teamMode ? 'primary' : null"
+        class="font-weight-medium"
+        :class="teamMode ? '' : 'white primary--text'"
         @click="copyCode"
       >
         <span class="mr-2">{{ id }}</span>
@@ -21,20 +41,24 @@
             class="video-list pa-4 overflow-auto"
           >
             <v-card
-              v-for="i in 1"
-              :key="i"
               :min-width="showSidebar ? '240px' : '500px'"
               max-width="500px"
               elevation="0"
-              class="mr-2 mb-2 flex-grow-1 aspect916"
+              class="mr-2 mb-2 flex-grow-1"
             >
-              <video
-                id="localStream"
-                ref="webcamVideo"
-                autoplay
-                muted
-                playsinline
-              />
+              <div class="aspect916">
+                <video
+                  id="localStream"
+                  ref="webcamVideo"
+                  class="rounded-lg"
+                  autoplay
+                  muted
+                  playsinline
+                />
+                <div class="display-name">
+                  <span class="text-subtitle-2 primary--text">{{ userName }}</span>
+                </div>
+              </div>
             </v-card>
             <v-card
               v-for="stream in remoteStream"
@@ -42,15 +66,20 @@
               :min-width="showSidebar ? '240px' : '500px'"
               max-width="500px"
               elevation="0"
-              class="mr-2 mb-2 flex-grow-1 aspect916"
+              class="mr-2 mb-2 flex-grow-1"
             >
-              <video
-                :id="`stream-${stream.peerId}`"
-                ref="remoteVideo"
-                autoplay
-                playsinline
-                muted
-              />
+              <div class="aspect916">
+                <video
+                  :id="`stream-${stream.peerId}`"
+                  ref="remoteVideo"
+                  autoplay
+                  playsinline
+                  muted
+                />
+                <div class="display-name">
+                  <span class="text-subtitle-2 primary--text">{{ findParticipants(stream.peerId).name }}</span>
+                </div>
+              </div>
             </v-card>
           </div>
         </div>
@@ -82,12 +111,34 @@
                 <div class="mb-2">
                   <span class="text-overline">peserta</span>
                   <v-card
-                    v-for="i in 4"
-                    :key="i"
+                    v-for="i in participants"
+                    :key="i.id"
                     outlined
-                    class="pa-2 d-flex flex-column mb-2"
+                    class="pa-2 mb-2"
                   >
-                    <span class="text-subtitle-2">Nama</span>
+                    <div
+                      v-if="teamMode"
+                      class="d-flex align-center pa-2"
+                    >
+                      <v-avatar
+                        size="40"
+                        class="mr-3"
+                      >
+                        <v-img :src="i.userData.avatar"></v-img>
+                      </v-avatar>
+                      <div>
+                        <div class="d-flex align-center">
+                          <h5 class="mr-2">
+                            {{ i.name }}
+                          </h5>
+                        </div>
+                        <small>{{ i.userData.email }}</small>
+                      </div>
+                    </div>
+                    <span
+                      v-else
+                      class="text-subtitle-2"
+                    >{{ i.name }}</span>
                   </v-card>
                 </div>
                 <span class="text-overline">dibuat oleh</span>
@@ -99,22 +150,83 @@
             <v-tab-item class="h-full">
               <div class="pa-4 d-flex flex-column">
                 <span class="text-h6 mb-2">Chat</span>
-                <div
-                  v-for="chat in chats"
-                  :key="chat.id"
-                  class="pa-2 d-flex flex-column chat-bubble"
-                  :class="deviceId === chat.sender ? 'ml-auto text-right' : 'mr-auto'"
-                >
-                  <span
-                    v-if="deviceId !== chat.sender"
-                    class="text-caption primary--text"
-                  >{{ chat.sender_name }}</span>
-                  <span class="text-body-2">{{ chat.content }}</span>
-                  <span
-                    v-if="chat.delivered_at"
-                    class="text-xs text--disabled"
-                  >{{ formatTime(chat.delivered_at.toDate()) }}</span>
-                </div>
+                <perfect-scrollbar class="chat-list">
+                  <div
+                    v-for="chat in chats"
+                    :key="chat.id"
+                    class="d-flex flex-column"
+                  >
+                    <div
+                      v-if="chat.type === 'chat'"
+                      class="pa-2 d-flex flex-column chat-bubble"
+                      :class="deviceId === chat.sender ? 'ml-auto text-right' : 'mr-auto'"
+                    >
+                      <span
+                        v-if="deviceId !== chat.sender"
+                        class="text-caption primary--text"
+                      >{{ chat.sender_name }}</span>
+                      <span class="text-body-2">{{ chat.content }}</span>
+                      <span
+                        v-if="chat.delivered_at"
+                        class="text-xs text--disabled"
+                      >{{ formatTime(chat.delivered_at.toDate()) }}</span>
+                    </div>
+                    <div
+                      v-else-if="chat.type === 'photo'"
+                      class="d-flex flex-column chat-bubble"
+                      :class="deviceId === chat.sender ? 'ml-auto text-right' : 'mr-auto'"
+                    >
+                      <v-img
+                        max-width="280px"
+                        contain
+                        class="rounded-t rounded-b cursor-pointer"
+                        :src="parseAttachment(chat.content).url"
+                        @click="openDocument(parseAttachment(chat.content).url)"
+                      />
+                    </div>
+                    <div
+                      v-else
+                      class="d-flex flex-column chat-bubble"
+                      :class="deviceId === chat.sender ? 'ml-auto text-right' : 'mr-auto'"
+                    >
+                      <v-card
+                        width="240px"
+                        elevation="0"
+                        @click="openDocument(parseAttachment(chat.content).url)"
+                      >
+                        <div class="d-flex align-center pa-2">
+                          <v-avatar
+                            size="40"
+                            class="mr-3"
+                            color="primary"
+                          >
+                            <v-icon
+                              color="white"
+                              size="28px"
+                            >
+                              {{ icons.mdiFileDocument }}
+                            </v-icon>
+                          </v-avatar>
+                          <div class="text-left">
+                            <div class="d-flex align-center">
+                              <h5 class="text-truncate">
+                                {{ parseAttachment(chat.content).meta.name }}
+                              </h5>
+                            </div>
+                            <small>{{ getFileSize(parseAttachment(chat.content).meta.size) }}</small>
+                          </div>
+                          <v-icon
+                            class="ml-auto mr-2"
+                            color="grey lighten-3"
+                            size="32px"
+                          >
+                            {{ icons.mdiDownloadCircleOutline }}
+                          </v-icon>
+                        </div>
+                      </v-card>
+                    </div>
+                  </div>
+                </perfect-scrollbar>
               </div>
               <div class="chat-input px-4">
                 <v-form
@@ -123,17 +235,105 @@
                   <v-text-field
                     v-model="chatInput"
                     hide-details
-                    outlined
+                    solo
                     dense
                     placeholder="Kirim pesan..."
-                    :append-icon="chatInput.length > 2 ? icons.mdiSend : ''"
-                    @click:append="sendChat()"
-                  />
+                    :readonly="attachment !== null"
+                    :loading="loadingAttachment"
+                  >
+                    <template #append>
+                      <v-btn
+                        v-if="attachment !== null"
+                        icon
+                        @click="attachment = null; chatInput = ''"
+                      >
+                        <v-icon size="18px">
+                          {{ icons.mdiCloseCircleOutline }}
+                        </v-icon>
+                      </v-btn>
+                      <v-file-input
+                        v-if="teamMode"
+                        v-model="attachment"
+                        hide-input
+                        class="pa-0 ma-0 mb-2"
+                        @change="chatInput = $event ? $event.name : ''"
+                      />
+                      <v-btn
+                        color="primary"
+                        elevation="0"
+                        type="submit"
+                        icon
+                        :disabled="chatInput.length < 2"
+                      >
+                        <v-icon size="20px">
+                          {{ icons.mdiSend }}
+                        </v-icon>
+                      </v-btn>
+                    </template>
+                  </v-text-field>
                 </v-form>
               </div>
             </v-tab-item>
-            <v-tab-item class="h-full">
-              Dokumen
+            <v-tab-item
+              v-if="teamMode"
+              class="h-full"
+            >
+              <div class="pa-4 d-flex flex-column">
+                <span class="text-h6 mb-2">Dokumen</span>
+                <span class="text-subtitle-2 text--disabled">Dokumen yang diunggah selama sesi berlangsung</span>
+                <perfect-scrollbar class="chat-list mt-4">
+                  <div
+                    v-for="doc in documentList"
+                    :key="doc.id"
+                    class="mb-2"
+                  >
+                    <v-card
+                      outlined
+                      class="mr-2 ml-1"
+                      @click="openDocument(doc.url)"
+                    >
+                      <div class="d-flex align-center pa-2">
+                        <v-avatar
+                          size="40"
+                          class="mr-4"
+                          color="primary"
+                        >
+                          <v-icon
+                            color="white"
+                            size="28px"
+                          >
+                            {{ icons.mdiFileDocument }}
+                          </v-icon>
+                        </v-avatar>
+                        <div>
+                          <div class="d-flex align-center">
+                            <h5 class="mr-2 text-truncate">
+                              {{ doc.name }}
+                            </h5>
+                          </div>
+                          <small>{{ getFileSize(doc.size) }}</small>
+                        </div>
+                      </div>
+                    </v-card>
+                  </div>
+                </perfect-scrollbar>
+              </div>
+              <div class="chat-input px-4">
+                <v-form
+                  @submit.prevent
+                >
+                  <v-file-input
+                    v-model="file"
+                    solo
+                    hide-details
+                    placeholder="Unggah Dokumen"
+                    :prepend-icon="null"
+                    :append-icon="icons.mdiSend"
+                    :loading="loadingAttachment"
+                    @click:append="uploadAttachment(file); file = null"
+                  />
+                </v-form>
+              </div>
             </v-tab-item>
           </v-tabs-items>
         </div>
@@ -154,7 +354,7 @@
                 class="mx-2"
                 v-bind="attrs"
                 v-on="on"
-                @click="isMicrophoneActive = !isMicrophoneActive"
+                @click="muteAudio()"
               >
                 <v-icon
                   dark
@@ -163,7 +363,27 @@
                 </v-icon>
               </v-btn>
             </template>
-            <span>Status Mikrofon</span>
+            <span>Status Mikrofon : {{ isMicrophoneActive ? 'Aktif' : 'Tidak Aktif' }}</span>
+          </v-tooltip>
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                x-small
+                :color="isCameraActive ? 'success' : 'secondary'"
+                class="mx-2"
+                v-bind="attrs"
+                v-on="on"
+                @click="toggleCamera()"
+              >
+                <v-icon
+                  dark
+                >
+                  {{ isCameraActive ? icons.mdiVideoBox : icons.mdiVideoBoxOff }}
+                </v-icon>
+              </v-btn>
+            </template>
+            <span>Status Kamera : {{ isCameraActive ? 'Aktif' : 'Tidak Aktif' }}</span>
           </v-tooltip>
           <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
@@ -182,7 +402,10 @@
             </template>
             <span>Akses Chat</span>
           </v-tooltip>
-          <v-tooltip top>
+          <v-tooltip
+            v-if="teamMode"
+            top
+          >
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 fab
@@ -206,6 +429,9 @@
                 x-small
                 class="mx-2"
                 v-bind="attrs"
+                :color="screenState ? 'success' : null"
+                :disabled="disableScreenShare"
+                @click="toggleScreenShare"
                 v-on="on"
               >
                 <v-icon>
@@ -213,7 +439,7 @@
                 </v-icon>
               </v-btn>
             </template>
-            <span>Bagikan Layar</span>
+            <span>{{ screenState ? 'Stop Bagikan Layar' : 'Bagikan Layar' }}</span>
           </v-tooltip>
           <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
@@ -224,6 +450,7 @@
                 class="mx-2"
                 v-bind="attrs"
                 v-on="on"
+                @click="showHangupConfirmation = true"
               >
                 <v-icon
                   dark
@@ -277,28 +504,77 @@
         </div>
       </v-card>
     </v-dialog>
+    <v-dialog
+      v-model="showHangupConfirmation"
+      max-width="500"
+    >
+      <v-card>
+        <v-card-title class="text-h5">
+          Keluar dari ruang konferensi?
+        </v-card-title>
+
+        <v-card-text>
+          Konfirmasi jika kamu ingin keluar dari ruang ini.
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+
+          <v-btn
+            class="text-capitalize"
+            color="grey darken-1"
+            text
+            @click="showHangupConfirmation = false"
+          >
+            Batalkan
+          </v-btn>
+
+          <v-btn
+            class="text-capitalize"
+            color="primary"
+            text
+            @click="hangUp()"
+          >
+            Yakin
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script>
 import Vue from 'vue'
-import { ref, onMounted } from '@vue/composition-api'
+import {
+  ref, onMounted, onUnmounted, computed,
+} from '@vue/composition-api'
 import firebase from 'firebase/app'
 import {
   mdiMenu, mdiClose, mdiMicrophone, mdiMicrophoneOff, mdiInformationOutline,
   mdiMessageOutline, mdiPhoneHangup, mdiMonitorScreenshot, mdiContentCopy,
-  mdiSend, mdiFileUpload, mdiCheck,
+  mdiSend, mdiFileUpload, mdiCheck, mdiVideoBox, mdiVideoBoxOff, mdiFileDocument,
+  mdiDownloadCircleOutline, mdiCloseCircleOutline,
+
 } from '@mdi/js'
+import { PerfectScrollbar } from 'vue2-perfect-scrollbar'
 import { format } from 'date-fns'
 import { db } from '@/firebase'
+import store from '@/store'
 import router from '@/router'
 import preferCodec from './codec'
 
 export default {
+  components: {
+    PerfectScrollbar,
+  },
   props: {
     id: {
       type: String,
       required: true,
+    },
+    teamId: {
+      type: String,
+      default: null,
     },
   },
   methods: {
@@ -316,12 +592,14 @@ export default {
   setup(props) {
     const showSidebar = ref(false)
     const isMicrophoneActive = ref(true)
+    const isCameraActive = ref(true)
     const currentTab = ref(0)
     const deviceId = localStorage.getItem('deviceId')
     const formatTime = date => format(date, 'HH:mm')
     const conferenceData = ref({})
-    const meetRef = db.collection('meets').doc(props.id)
-    let userName = localStorage.getItem('userName')
+    let meetRef = db.collection('meets').doc(props.id)
+    let participantRef = db.collection('meets').doc(props.id).collection('participants')
+    const userName = ref(localStorage.getItem('userName'))
     const uid = deviceId
     const showSetNameDialog = ref(false)
     const loadingSetName = ref(false)
@@ -340,7 +618,7 @@ export default {
     let localStream = null
     const remoteStream = ref([])
     const disableScreenShare = ref(false)
-    const captureStream = null
+    let captureStream = null
     const screenState = ref(false)
     const contentId = ref(null)
 
@@ -360,10 +638,11 @@ export default {
     }
 
     const addUserToRoom = async () => {
-      await meetRef.collection('participants').doc(uid).set({
-        name: userName,
+      await participantRef.doc(uid).set({
+        name: userName.value,
         id: uid,
         display: 'user',
+        userData: props.teamId ? JSON.parse(localStorage.getItem('userData')) : null,
       })
     }
 
@@ -491,8 +770,6 @@ export default {
     }
 
     const receiveICECandidates = async (peerConnection, remoteEndpointID, Id) => {
-      console.log('asdasdasd', remoteEndpointID)
-      console.log('zxczxc', Id)
       meetRef.collection(remoteEndpointID).where('id', '==', Id).onSnapshot(snapshot => {
         console.log(snapshot)
         snapshot.docChanges().forEach(async change => {
@@ -507,24 +784,27 @@ export default {
     }
 
     const closeConnection = (peerConnection, peerId) => {
-      meetRef.collection('participants').where('id', '==', peerId).onSnapshot(snapshot => {
+      console.log('closing connection!', peerId)
+      participantRef.where('id', '==', peerId).onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
           if (change.type === 'removed') {
             if (change.doc.data().display === 'content') {
               console.log('remove the content later')
-
-              // document.getElementById('screenShareButton').classList.remove('hidden');
             }
+            remoteStream.value = remoteStream.value.filter(el => el.peerId !== peerId)
             peerConnection.close()
-            console.log('remove video list here')
-
-            // if (document.getElementById("video" + peerId + "Container") != null) {
-            //   document.getElementById("video" + peerId + "Container").remove();
-            // }
-            // enforceLayout(--numberOfDisplayedPeers);
           }
         })
       })
+
+      // eslint-disable-next-line no-param-reassign
+      peerConnection.onconnectionstatechange = () => {
+        if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+          participantRef.doc(peerId).delete()
+          peerConnection.close()
+          remoteStream.value = remoteStream.value.filter(el => el.peerId !== peerId)
+        }
+      }
     }
 
     const restartConnection = (peerConnection, peerId) => {
@@ -553,6 +833,7 @@ export default {
             isPeerContent,
             src: event.streams[0],
             muted: false,
+            name: 'Dummy',
           })
           setTimeout(() => {
             document.querySelector(`#stream-${remoteEndpointID}`).srcObject = new MediaStream()
@@ -609,12 +890,6 @@ export default {
           sendStream(peerConnection, captureStream)
         } else {
           sendStream(peerConnection, localStream)
-
-          // document.getElementById('cameras').childNodes.forEach(camera => {
-          //   camera.addEventListener('click', () => {
-          //     switchStream(peerConnection, cameraStream)
-          //   });
-          // });
         }
       }
 
@@ -644,7 +919,7 @@ export default {
     }
 
     const requestConnectionToCurrentPeers = (Id, isContent) => {
-      meetRef.collection('participants').get().then(snapshot => {
+      participantRef.get().then(snapshot => {
         snapshot.docs.forEach(async doc => {
           const peerId = doc.id
           const isPeerContent = doc.data().display === 'content'
@@ -661,9 +936,9 @@ export default {
     }
 
     const signalHangup = () => {
-      meetRef.collection('participants').doc(uid).delete()
+      participantRef.doc(uid).delete()
       if (screenState.value) {
-        meetRef.collection('participants').doc(contentId.value).delete()
+        participantRef.doc(contentId.value).delete()
       }
     }
 
@@ -696,7 +971,7 @@ export default {
           requestConnectionToCurrentPeers(uid, false)
           acceptConnectionsFromJoiningPeers(uid, false)
         } else {
-          router.replace('/')
+          router.replace({ name: 'home' })
           Vue.$toast.error('Maaf kode tersebut tidak valid')
         }
       })
@@ -715,60 +990,236 @@ export default {
     // chat related stuff
     const chats = ref([])
     const chatInput = ref('')
+    const attachment = ref(null)
+    const file = ref(null)
 
     const subscribeChat = () => {
-      db.collection('meets')
-        .doc(props.id)
+      meetRef
         .collection('chats').orderBy('delivered_at', 'asc')
         .onSnapshot(snapshot => {
           chats.value = snapshot.docs.map(el => ({ id: el.id, ...el.data() }))
         })
     }
 
-    const sendChat = () => {
+    const loadingAttachment = ref(false)
+
+    const uploadAttachment = async attach => new Promise((resolve, reject) => {
+      loadingAttachment.value = true
+      store.dispatch('uploadDocument', {
+        team_id: props.teamId,
+        conf_id: props.id,
+        file: attach,
+      }).then(result => {
+        loadingAttachment.value = false
+        resolve(result)
+      }).catch(err => {
+        reject(err)
+        loadingAttachment.value = false
+      })
+    })
+
+    const sendChat = async () => {
       if (chatInput.value.length > 2) {
-        db.collection('meets')
-          .doc(props.id)
-          .collection('chats').add({
-            type: 'chat',
-            sender: deviceId,
-            sender_name: localStorage.getItem('userName'),
-            content: chatInput.value,
-            delivered_at: firebase.firestore.FieldValue.serverTimestamp(),
+        const payload = {
+          type: 'chat',
+          sender: deviceId,
+          sender_name: userName.value,
+          content: chatInput.value,
+          delivered_at: firebase.firestore.FieldValue.serverTimestamp(),
+        }
+
+        if (attachment.value) {
+          if (attachment.value.type.includes('image')) {
+            payload.type = 'photo'
+          } else {
+            payload.type = 'document'
+          }
+          await uploadAttachment(attachment.value).then(data => {
+            console.log(data)
+            payload.content = JSON.stringify({
+              url: data.url,
+              meta: data.meta,
+            })
           })
+        }
+
+        meetRef
+          .collection('chats').add(payload)
           .then(() => {
+            attachment.value = null
             chatInput.value = ''
           })
       }
     }
 
+    const parseAttachment = json => JSON.parse(json)
+    const getFileSize = size => {
+      const mb = Math.round((size / 1000000) * 100) / 100
+      if (mb < 1) {
+        const kb = Math.round((mb * 1000) * 100) / 100
+
+        return `${kb} kb`
+      }
+
+      return `${mb} mb`
+    }
+    const openDocument = document => {
+      window.open(document, '_blank').focus()
+    }
+
+    const documentInput = ref('')
+    const documentList = ref([])
+    const subscribeDocs = () => {
+      console.log(props.id)
+      db.collection('teams').doc(props.teamId)
+        .collection('documents').where('conf_id', '==', props.id)
+        .orderBy('uploaded_at', 'asc')
+        .onSnapshot(snapshot => {
+          console.log(snapshot)
+          documentList.value = snapshot.docs.map(el => ({ id: el.id, ...el.data() }))
+        })
+    }
+
+    const participants = ref([])
+    const subscribeParticipants = () => {
+      participantRef.onSnapshot(snapshot => {
+        participants.value = snapshot.docs.map(el => ({ id: el.id, ...el.data() }))
+      })
+    }
+
+    const findParticipants = id => {
+      const filter = participants.value.filter(el => el.id === id)
+
+      if (filter.length) {
+        return filter[0]
+      }
+
+      return ''
+    }
+
     const setName = () => {
       loadingSetName.value = true
       localStorage.setItem('userName', inputName.value)
-      userName = inputName.value
+      userName.value = inputName.value
       setTimeout(() => {
         loadingSetName.value = false
         showSetNameDialog.value = false
         subscribeChat()
+        subscribeParticipants()
         initWebrtc()
       }, 2000)
     }
 
-    onMounted(() => {
-      if (userName) {
+    const muteAudio = () => {
+      isMicrophoneActive.value = !isMicrophoneActive.value
+      localStream.getAudioTracks()[0].enabled = isMicrophoneActive.value
+    }
+
+    const toggleCamera = () => {
+      isCameraActive.value = !isCameraActive.value
+      localStream.getVideoTracks()[0].enabled = isCameraActive.value
+    }
+
+    const signalContentShare = async () => {
+      contentId.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+      console.log('content id', contentId.value)
+      participantRef.doc(contentId.value).set({
+        name: userName.value,
+        id: contentId.value,
+        display: 'content',
+      })
+      requestConnectionToCurrentPeers(contentId.value, true)
+      acceptConnectionsFromJoiningPeers(contentId.value, true)
+    }
+
+    const stopCapture = stream => {
+      const tracks = stream.getTracks()
+
+      tracks.forEach(track => track.stop())
+
+      // eslint-disable-next-line no-param-reassign
+      stream = null
+    }
+
+    const toggleScreenOff = async () => {
+      participantRef.doc(contentId.value).delete()
+      screenState.value = false
+      stopCapture(captureStream)
+
+      document.querySelector('#localStream').srcObject = localStream
+    }
+
+    const toggleScreenShare = async () => {
+      if (!screenState.value) {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            cursor: 'always',
+          },
+          audio: true,
+        })
+
+        document.querySelector('#localStream').srcObject = captureStream
+        signalContentShare()
+        screenState.value = true
+        captureStream.getVideoTracks()[0].onended = () => {
+          toggleScreenOff()
+        }
+      } else {
+        toggleScreenOff()
+      }
+    }
+
+    const showHangupConfirmation = ref(false)
+    const hangUp = () => {
+      participantRef.doc(uid).delete().then(() => {
+        const tracks = localStream.getTracks()
+        tracks.forEach(track => {
+          track.stop()
+        })
+        if (screenState.value) {
+          participantRef.doc(contentId.value).delete()
+        }
+        router.replace({ name: 'home' })
+      })
+    }
+
+    const teamConferenceDetail = ref(null)
+    const teamMode = computed(() => props.teamId !== null)
+
+    onMounted(async () => {
+      if (props.teamId) {
+        meetRef = db.collection('teams').doc(props.teamId).collection('conferences').doc(props.id)
+        participantRef = db.collection('teams').doc(props.teamId).collection('conferences').doc(props.id)
+          .collection('joined')
+        teamConferenceDetail.value = await meetRef.get()
         subscribeChat()
+        subscribeDocs()
+        subscribeParticipants()
         initWebrtc()
       } else {
-        showSetNameDialog.value = true
+        // eslint-disable-next-line no-lonely-if
+        if (userName.value) {
+          subscribeChat()
+          subscribeParticipants()
+          initWebrtc()
+        } else {
+          showSetNameDialog.value = true
+        }
       }
     })
 
+    onUnmounted(() => {
+      hangUp()
+    })
+
     return {
+      userName,
       showSidebar,
       isMicrophoneActive,
       currentTab,
       chats,
       chatInput,
+      attachment,
       sendChat,
       deviceId,
       formatTime,
@@ -779,6 +1230,27 @@ export default {
       loadingSetName,
       inputName,
       setName,
+      muteAudio,
+      isCameraActive,
+      toggleCamera,
+      documentList,
+      subscribeDocs,
+      documentInput,
+      showHangupConfirmation,
+      hangUp,
+      findParticipants,
+      disableScreenShare,
+      toggleScreenShare,
+      screenState,
+      participants,
+      teamConferenceDetail,
+      teamMode,
+      loadingAttachment,
+      uploadAttachment,
+      file,
+      parseAttachment,
+      getFileSize,
+      openDocument,
 
       icons: {
         mdiMenu,
@@ -793,6 +1265,11 @@ export default {
         mdiSend,
         mdiFileUpload,
         mdiCheck,
+        mdiVideoBox,
+        mdiVideoBoxOff,
+        mdiFileDocument,
+        mdiDownloadCircleOutline,
+        mdiCloseCircleOutline,
       },
     }
   },
@@ -843,14 +1320,31 @@ video {
   margin-bottom: 20px;
 }
 
+.chat-list {
+  max-height: calc(90vh - 180px) !important;
+}
+
 .chat-bubble {
   border: 1px solid #eee;
   border-radius: 8px;
   margin-bottom: 8px;
 }
 
-video {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
+// video {
+//   -webkit-transform: scaleX(-1);
+//   transform: scaleX(-1);
+// }
+
+.display-name {
+  background: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 16px;
+  right: 8px;
+}
+
+.v-application--is-ltr .v-input__prepend-outer {
+  margin-right: 0px !important;
 }
 </style>

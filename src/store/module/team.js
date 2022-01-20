@@ -245,7 +245,10 @@ export default {
           .doc(payload.team_id)
           .collection('conferences')
           .doc(id)
-          .set(payload.data, { merge: true })
+          .set({
+            ...payload.data,
+            isStarted: false,
+          }, { merge: true })
           .then(async () => {
             await state.dispatch('joinConference', {
               team_id: payload.team_id,
@@ -302,8 +305,10 @@ export default {
           .collection('participants')
           .doc(payload.user_id)
           .set({
-            uid: payload.user_id,
+            id: payload.user_id,
+            display: 'user',
             joined_at: firebase.firestore.FieldValue.serverTimestamp(),
+            userData: JSON.parse(localStorage.getItem('userData')),
           }, { merge: true })
           .then(() => {
             db.collection('users').doc(payload.user_id).collection('schedule').doc(payload.conf_id)
@@ -409,6 +414,11 @@ export default {
               resolve({
                 ...result,
                 url,
+                meta: {
+                  type: payload.file.type,
+                  name: payload.file.name,
+                  size: payload.file.size,
+                },
               })
             })
         }).catch(err => {

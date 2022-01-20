@@ -59,30 +59,16 @@ export default {
     createMeting(state) {
       return new Promise((resolve, reject) => {
         state.dispatch('generateRandomId').then(code => {
-          const uid = localStorage.getItem('deviceId')
+          const userName = localStorage.getItem('userName')
   
           state.isInitiator = true
           state.commit('setLoadingCreate', true)
           meets.doc(code).set({
-            initialized_by: uid,
+            initialized_by: userName,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
-            answer: {},
-            offer: {},
           }, { merge: true }).then(() => {
-            meets.doc(code).collection('participants').doc(uid).set({
-              audio: true,
-              video: true,
-              iceCandidate: {
-                candidate: '',
-                sdpMLineIndex: '',
-                sdpMid: '',
-              },
-              name: localStorage.getItem('userName'),
-            }, { merge: true })
-              .then(() => {
-                state.commit('setLoadingCreate', false)
-                resolve(code)
-              })
+            state.commit('setLoadingCreate', false)
+            resolve(code)
           }).catch(() => {
             state.commit('setLoadingCreate', false)
             reject()

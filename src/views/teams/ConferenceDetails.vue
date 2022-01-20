@@ -17,6 +17,7 @@
           </v-card-title>
         </v-slide-y-reverse-transition>
         <v-slide-x-reverse-transition
+          v-if="!isExpired"
           mode="out-in"
         >
           <div
@@ -60,6 +61,14 @@
             </v-btn>
           </div>
         </v-slide-x-reverse-transition>
+        <div
+          v-else
+          class="pa-4 ml-auto"
+        >
+          <v-chip>
+            Konferensi ini telah selesai
+          </v-chip>
+        </div>
       </div>
       <div
         v-if="loading"
@@ -127,7 +136,7 @@
               </v-row>
             </v-card-text>
             <v-card-text
-              v-if="!loading"
+              v-if="!loading && !isExpired"
               class="mt-4"
             >
               <v-btn
@@ -160,6 +169,7 @@
                 block
                 class="mt-4 mb-4"
                 :loading="loadingJoin"
+                @click="$router.push({ name: 'fess', params: { teamId, id: confId } })"
               >
                 Mulai Konferensi
               </v-btn>
@@ -207,6 +217,14 @@ export default {
     const confDetail = ref({})
     const currentTab = ref(0)
     const loadingJoin = ref(false)
+
+    const isExpired = computed(() => {
+      if (confDetail.value.name && new Date() > new Date(Date.parse(`${confDetail.value.end_date} ${confDetail.value.end_time}`))) {
+        return true
+      }
+
+      return false
+    })
 
     const show = (teamIds, confIds) => {
       loading.value = true
@@ -287,6 +305,8 @@ export default {
       joinConference,
       leaveConference,
       loadingJoin,
+
+      isExpired,
     }
   },
 }

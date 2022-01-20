@@ -307,7 +307,10 @@
                               md="6"
                             >
                               <v-hover #default="{ hover }">
-                                <v-card outlined>
+                                <v-card
+                                  outlined
+                                  @click="$refs.pdf.show(doc.url)"
+                                >
                                   <div class="d-flex align-center pa-2">
                                     <v-avatar
                                       size="40"
@@ -351,6 +354,9 @@
                                       <v-list>
                                         <v-list-item>
                                           Lihat Detail
+                                        </v-list-item>
+                                        <v-list-item>
+                                          Download
                                         </v-list-item>
                                         <v-list-item>
                                           Hapus Dokumen
@@ -522,6 +528,7 @@
       :team-id="id"
       @success="fetchDetails()"
     />
+    <pdf-viewer ref="pdf" />
   </v-app>
 </template>
 
@@ -538,6 +545,7 @@ import DeleteTeam from '@/views/teams/DeleteTeam.vue'
 import LeaveTeam from '@/views/teams/LeaveTeam.vue'
 import Logout from '@/components/Logout.vue'
 import UpdateProfile from '@/components/UpdateProfile.vue'
+import PdfViewer from '@/components/misc/PdfViewer.vue'
 import ConferenceForm from './ConferenceForm.vue'
 import ConferenceDetails from './ConferenceDetails.vue'
 import AddMembers from './AddMembers.vue'
@@ -552,6 +560,7 @@ export default {
     ConferenceDetails,
     AddMembers,
     UpdateProfile,
+    PdfViewer,
   },
   props: {
     id: {
@@ -572,7 +581,7 @@ export default {
     const loadingDetails = ref(false)
     const conferenceList = ref([])
     const loadingConference = ref(false)
-    const currentTab = ref(1)
+    const currentTab = ref(0)
     const showEdit = ref(false)
     const userData = computed(() => store.state.user.userData)
     const isMyTeam = host => {

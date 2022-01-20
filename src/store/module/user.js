@@ -78,6 +78,7 @@ export default {
               uid: payload,
             }
             localStorage.setItem('userData', JSON.stringify(userData))
+            localStorage.setItem('userName', userData.name)
             state.commit('updateUserField', { path: 'userData', value: userData })
             state.commit('updateUserField', { path: 'loadingUserData', value: false })
             db.collection('users').doc(payload).update({
@@ -120,6 +121,7 @@ export default {
             ...payload.data,
           }
           localStorage.setItem('userData', JSON.stringify(userData))
+          localStorage.setItem('userName', userData.name)
           state.commit('updateUserField', { path: 'userData', value: userData })
           resolve(result)
         })
@@ -148,6 +150,7 @@ export default {
           state.commit('updateUserField', { path: 'isAuthenticated', value: false })
           state.commit('updateUserField', { path: 'googleAuthInformation', value: {} })
           localStorage.removeItem('userData')
+          localStorage.removeItem('userName')
           resolve()
         }).catch(err => {
           reject(err)

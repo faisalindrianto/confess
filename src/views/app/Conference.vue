@@ -435,7 +435,7 @@
                 v-on="on"
               >
                 <v-icon>
-                  {{ icons.mdiMonitorScreenshot }}
+                  {{ icons.mdiProjectorScreen }}
                 </v-icon>
               </v-btn>
             </template>
@@ -551,7 +551,7 @@ import {
 import firebase from 'firebase/app'
 import {
   mdiMenu, mdiClose, mdiMicrophone, mdiMicrophoneOff, mdiInformationOutline,
-  mdiMessageOutline, mdiPhoneHangup, mdiMonitorScreenshot, mdiContentCopy,
+  mdiMessageOutline, mdiPhoneHangup, mdiProjectorScreen, mdiContentCopy,
   mdiSend, mdiFileUpload, mdiCheck, mdiVideoBox, mdiVideoBoxOff, mdiFileDocument,
   mdiDownloadCircleOutline, mdiCloseCircleOutline,
 
@@ -836,6 +836,7 @@ export default {
             name: 'Dummy',
           })
           setTimeout(() => {
+            console.log(remoteEndpointID)
             document.querySelector(`#stream-${remoteEndpointID}`).srcObject = new MediaStream()
             // eslint-disable-next-line prefer-destructuring
             document.querySelector(`#stream-${remoteEndpointID}`).srcObject = event.streams[0]
@@ -1035,7 +1036,6 @@ export default {
             payload.type = 'document'
           }
           await uploadAttachment(attachment.value).then(data => {
-            console.log(data)
             payload.content = JSON.stringify({
               url: data.url,
               meta: data.meta,
@@ -1070,12 +1070,10 @@ export default {
     const documentInput = ref('')
     const documentList = ref([])
     const subscribeDocs = () => {
-      console.log(props.id)
       db.collection('teams').doc(props.teamId)
         .collection('documents').where('conf_id', '==', props.id)
         .orderBy('uploaded_at', 'asc')
         .onSnapshot(snapshot => {
-          console.log(snapshot)
           documentList.value = snapshot.docs.map(el => ({ id: el.id, ...el.data() }))
         })
     }
@@ -1259,7 +1257,7 @@ export default {
         mdiMicrophoneOff,
         mdiMessageOutline,
         mdiPhoneHangup,
-        mdiMonitorScreenshot,
+        mdiProjectorScreen,
         mdiInformationOutline,
         mdiContentCopy,
         mdiSend,

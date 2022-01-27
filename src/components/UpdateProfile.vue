@@ -26,7 +26,7 @@
         <v-card
           class="pa-4 mb-8 d-flex align-center"
           outlined
-          @click="pickPhoto"
+          @click="$refs.file.click()"
         >
           <v-avatar
             class="mr-8"
@@ -38,6 +38,12 @@
             <span class="text-subtitle-2 font-weight-bold">Update Foto Profil</span>
             <span class="text-body-2 d-block mt-2">Upload foto profilmu disini.</span>
           </div>
+          <input
+            ref="file"
+            type="file"
+            style="display:none"
+            @change="onFileChange($event.target.files)"
+          >
         </v-card>
 
         <v-text-field
@@ -77,6 +83,8 @@ import Vue from 'vue'
 import { mdiClose } from '@mdi/js'
 import { ref, computed, onMounted } from '@vue/composition-api'
 import store from '@/store'
+import router from '@/router'
+import { storage } from '@/firebase'
 
 export default {
   setup() {
@@ -86,6 +94,7 @@ export default {
       name: '',
       avatar: '',
     })
+    const newAvatar = ref(null)
     const show = () => {
       showModal.value = true
     }
@@ -94,24 +103,44 @@ export default {
       updateData.value.name = userData.value.name
       updateData.value.avatar = userData.value.avatar
     })
-    const pickPhoto = () => {}
     const reset = () => {
       updateData.value.name = userData.value.name
       updateData.value.avatar = userData.value.avatar
     }
-    const updateProfile = () => {
+    const updateProfile = async () => {
       loading.value = true
-      store.dispatch('updateUserData', {
+      const payload = {
         uid: userData.value.uid,
         data: updateData.value,
-      }).then(() => {
+      }
+      if (newAvatar.value) {
+        const metadata = {
+          contentType: newAvatar.value.type,
+        }
+        const upload = storage.ref().child(`userPhoto/${payload.uid}/${newAvatar.value.name}`)
+        await upload.put(newAvatar.value, metadata).then(async () => {
+          const url = await upload.getDownloadURL()
+
+          payload.data.avatar = url
+        })
+      }
+
+      store.dispatch('updateUserData', payload).then(() => {
         loading.value = false
         showModal.value = false
         Vue.$toast.success('Berhasil mengupdate profil!')
+        router.go()
       }).catch(() => {
         loading.value = false
         Vue.$toast.error('Gagal mengupdate profil!')
       })
+    }
+
+    const onFileChange = files => {
+      updateData.value.avatar = URL.createObjectURL(files[0])
+
+      // eslint-disable-next-line prefer-destructuring
+      newAvatar.value = files[0]
     }
 
     return {
@@ -119,10 +148,10 @@ export default {
       userData,
       updateData,
       show,
-      pickPhoto,
       reset,
       updateProfile,
       loading,
+      onFileChange,
 
       icons: {
         mdiClose,

@@ -68,8 +68,9 @@
           <v-img
             :src="require('@/assets/images/confess-logo-home.svg')"
             width="40%"
-            max-height="90px"
+            max-height="120px"
             contain
+            position="right"
             class="ms-auto"
           ></v-img>
           <v-tabs-items

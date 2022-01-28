@@ -57,7 +57,10 @@
                 playsinline
               />
               <div class="display-name">
-                <span id="contentName" class="text-subtitle-2 primary--text"></span>
+                <span
+                  id="contentName"
+                  class="text-subtitle-2 primary--text"
+                ></span>
               </div>
             </div>
           </v-card>

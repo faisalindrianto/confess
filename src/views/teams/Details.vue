@@ -309,7 +309,7 @@
                               <v-hover #default="{ hover }">
                                 <v-card
                                   outlined
-                                  @click="$refs.pdf.show(doc.url)"
+                                  @click="$refs.doc.show(doc.type, doc)"
                                 >
                                   <div class="d-flex align-center pa-2">
                                     <v-avatar
@@ -528,7 +528,7 @@
       :team-id="id"
       @success="fetchDetails()"
     />
-    <pdf-viewer ref="pdf" />
+    <document-viewer ref="doc" />
   </v-app>
 </template>
 
@@ -545,7 +545,7 @@ import DeleteTeam from '@/views/teams/DeleteTeam.vue'
 import LeaveTeam from '@/views/teams/LeaveTeam.vue'
 import Logout from '@/components/Logout.vue'
 import UpdateProfile from '@/components/UpdateProfile.vue'
-import PdfViewer from '@/components/misc/PdfViewer.vue'
+import DocumentViewer from '@/components/misc/DocumentViewer.vue'
 import ConferenceForm from './ConferenceForm.vue'
 import ConferenceDetails from './ConferenceDetails.vue'
 import AddMembers from './AddMembers.vue'
@@ -560,7 +560,7 @@ export default {
     ConferenceDetails,
     AddMembers,
     UpdateProfile,
-    PdfViewer,
+    DocumentViewer,
   },
   props: {
     id: {

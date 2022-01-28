@@ -36,13 +36,38 @@
     </div>
     <v-card class="mx-8 main d-flex flex-column">
       <div class="d-flex video-top">
-        <div class="w-100 d-flex flex-column align-center justify-center">
+        <div
+          class="w-100 d-flex flex-column align-center justify-center"
+          :class="screenState && showSidebar ? 'screen-state' : null"
+        >
+          <v-card
+            v-if="screenState"
+            :min-height="'60vh'"
+            max-height="60vh"
+            elevation="0"
+            class="mr-2 mb-2 aspect916"
+          >
+            <div class="aspect916">
+              <video
+                id="contentStream"
+                ref="contentStream"
+                class="rounded-lg"
+                autoplay
+                muted
+                playsinline
+              />
+              <div class="display-name">
+                <span id="contentName" class="text-subtitle-2 primary--text"></span>
+              </div>
+            </div>
+          </v-card>
           <div
-            class="video-list pa-4 overflow-auto"
+            class="video-list pa-4"
+            :class="screenState ? 'justify-start' : 'flex-wrap'"
           >
             <v-card
-              :min-width="showSidebar ? '240px' : '500px'"
-              max-width="500px"
+              :min-width="screenState ? '200px' : '500px'"
+              :max-width="screenState ? '200px' : '500px'"
               elevation="0"
               class="mr-2 mb-2 flex-grow-1"
             >
@@ -63,8 +88,8 @@
             <v-card
               v-for="stream in remoteStream"
               :key="stream.peerId"
-              :min-width="showSidebar ? '240px' : '500px'"
-              max-width="500px"
+              :min-width="screenState ? '200px' : '500px'"
+              :max-width="screenState ? '200px' : '500px'"
               elevation="0"
               class="mr-2 mb-2 flex-grow-1"
             >
@@ -181,7 +206,7 @@
                         contain
                         class="rounded-t rounded-b cursor-pointer"
                         :src="parseAttachment(chat.content).url"
-                        @click="openDocument(parseAttachment(chat.content).url)"
+                        @click="$refs.doc.show(parseAttachment(chat.content).meta.type, parseAttachment(chat.content))"
                       />
                     </div>
                     <div
@@ -192,7 +217,7 @@
                       <v-card
                         width="240px"
                         elevation="0"
-                        @click="openDocument(parseAttachment(chat.content).url)"
+                        @click="$refs.doc.show(parseAttachment(chat.content).meta.type, parseAttachment(chat.content))"
                       >
                         <div class="d-flex align-center pa-2">
                           <v-avatar
@@ -290,7 +315,7 @@
                     <v-card
                       outlined
                       class="mr-2 ml-1"
-                      @click="openDocument(doc.url)"
+                      @click="$refs.doc.show(doc.type, doc)"
                     >
                       <div class="d-flex align-center pa-2">
                         <v-avatar
@@ -540,6 +565,8 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <document-viewer ref="doc" />
   </div>
 </template>
 
@@ -561,11 +588,13 @@ import { format } from 'date-fns'
 import { db } from '@/firebase'
 import store from '@/store'
 import router from '@/router'
+import DocumentViewer from '@/components/misc/DocumentViewer.vue'
 import preferCodec from './codec'
 
 export default {
   components: {
     PerfectScrollbar,
+    DocumentViewer,
   },
   props: {
     id: {
@@ -790,6 +819,8 @@ export default {
           if (change.type === 'removed') {
             if (change.doc.data().display === 'content') {
               console.log('remove the content later')
+              disableScreenShare.value = false
+              screenState.value = false
             }
             remoteStream.value = remoteStream.value.filter(el => el.peerId !== peerId)
             peerConnection.close()
@@ -824,25 +855,48 @@ export default {
       }
     }
 
+    const participants = ref([])
+    const findParticipants = id => {
+      const filter = participants.value.filter(el => el.id === id)
+
+      if (filter.length) {
+        return filter[0]
+      }
+
+      return ''
+    }
+
     const receiveStream = (peerConnection, remoteEndpointID, isPeerContent) => {
       peerConnection.addEventListener('track', event => {
         if (!remoteStream.value.some(el => el.peerId === remoteEndpointID)) {
           console.log('got remote track', event)
-          remoteStream.value.push({
-            peerId: remoteEndpointID,
-            isPeerContent,
-            src: event.streams[0],
-            muted: false,
-            name: 'Dummy',
-          })
+          if (!isPeerContent) {
+            remoteStream.value.push({
+              peerId: remoteEndpointID,
+              isPeerContent,
+              src: event.streams[0],
+              muted: false,
+              name: 'Dummy',
+            })
+          }
           setTimeout(() => {
-            console.log(remoteEndpointID)
-            document.querySelector(`#stream-${remoteEndpointID}`).srcObject = new MediaStream()
-            // eslint-disable-next-line prefer-destructuring
-            document.querySelector(`#stream-${remoteEndpointID}`).srcObject = event.streams[0]
-            document.querySelector(`#stream-${remoteEndpointID}`).autoplay = true
-            document.querySelector(`#stream-${remoteEndpointID}`).playsInline = true
-            document.querySelector(`#stream-${remoteEndpointID}`).muted = false
+            console.log('receive peer content!', isPeerContent)
+            if (isPeerContent) {
+              document.querySelector('#contentStream').srcObject = new MediaStream()
+              // eslint-disable-next-line prefer-destructuring
+              document.querySelector('#contentStream').srcObject = event.streams[0]
+              document.querySelector('#contentStream').autoplay = true
+              document.querySelector('#contentStream').playsInline = true
+              document.querySelector('#contentStream').muted = false
+              document.querySelector('#contentName').innerText = findParticipants(remoteEndpointID).name
+            } else {
+              document.querySelector(`#stream-${remoteEndpointID}`).srcObject = new MediaStream()
+              // eslint-disable-next-line prefer-destructuring
+              document.querySelector(`#stream-${remoteEndpointID}`).srcObject = event.streams[0]
+              document.querySelector(`#stream-${remoteEndpointID}`).autoplay = true
+              document.querySelector(`#stream-${remoteEndpointID}`).playsInline = true
+              document.querySelector(`#stream-${remoteEndpointID}`).muted = false
+            }
           }, 2000)
         }
       })
@@ -928,6 +982,7 @@ export default {
           if (peerId !== uid && peerId !== Id) {
             if (isPeerContent) {
               disableScreenShare.value = true
+              screenState.value = true
             }
 
             await peerRequestConnection(peerId, Id, isContent, isPeerContent)
@@ -954,6 +1009,8 @@ export default {
               isSenderContent = true
 
               // disable screen share here
+              disableScreenShare.value = true
+              screenState.value = true
             }
             console.log('is sender content', isSenderContent)
             await peerAcceptConnection(change.doc.id, Id, isSenderContent, isReceiverContent)
@@ -1078,21 +1135,10 @@ export default {
         })
     }
 
-    const participants = ref([])
     const subscribeParticipants = () => {
       participantRef.onSnapshot(snapshot => {
         participants.value = snapshot.docs.map(el => ({ id: el.id, ...el.data() }))
       })
-    }
-
-    const findParticipants = id => {
-      const filter = participants.value.filter(el => el.id === id)
-
-      if (filter.length) {
-        return filter[0]
-      }
-
-      return ''
     }
 
     const setName = () => {
@@ -1156,12 +1202,15 @@ export default {
           audio: true,
         })
 
-        document.querySelector('#localStream').srcObject = captureStream
         signalContentShare()
         screenState.value = true
         captureStream.getVideoTracks()[0].onended = () => {
           toggleScreenOff()
         }
+        setTimeout(() => {
+          document.querySelector('#contentStream').srcObject = captureStream
+          document.querySelector('#contentName').innerText = userName.value
+        }, 200)
       } else {
         toggleScreenOff()
       }
@@ -1284,10 +1333,10 @@ export default {
 }
 
 .video-list {
+  max-width: 100%;
   display: flex;
-  flex-wrap: wrap-reverse;
-  align-content: center;
   justify-content: center;
+  overflow-x: auto;
 }
 
 .aspect916 {
@@ -1338,11 +1387,15 @@ video {
   padding: 2px 4px;
   border-radius: 4px;
   position: absolute;
-  bottom: 16px;
+  bottom: 8px;
   right: 8px;
 }
 
 .v-application--is-ltr .v-input__prepend-outer {
   margin-right: 0px !important;
+}
+
+.screen-state {
+  max-width: calc(100% - 440px) !important;
 }
 </style>

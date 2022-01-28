@@ -8,7 +8,7 @@
       min-height="90vh"
     >
       <v-card-title class="font-weight-bold d-flex">
-        <span>Preview Dokumen</span>
+        <span>Preview Gambar</span>
         <v-btn
           color="primary"
           rounded
@@ -29,12 +29,10 @@
       <v-card-text
         height="80vh"
       >
-        <pdf
-          v-for="i in numPages"
-          :key="`${pdfLink}${i}`"
-          :page="i"
-          :src="pdfLink"
-          class="h-full"
+        <v-img
+          width="100%"
+          :src="link"
+          contain
         />
       </v-card-text>
     </v-card>
@@ -43,32 +41,16 @@
 
 <script>
 import { ref } from '@vue/composition-api'
-import pdf from 'pdfvuer'
 import { mdiClose } from '@mdi/js'
 
 export default {
-  components: {
-    pdf,
-  },
   setup() {
-    const pdfLink = ref('')
-    const numPages = ref(0)
-    const filename = ref('Oriens')
+    const link = ref('')
     const isOpen = ref(false)
 
-    const show = (data, name) => {
-      if (name) {
-        filename.value = name
-      } else {
-        // eslint-disable-next-line prefer-destructuring
-        filename.value = data.substring(data.lastIndexOf('/') + 1).split('.')[0]
-      }
-
-      pdf.createLoadingTask(data).then(result => {
-        numPages.value = result.numPages
-        pdfLink.value = data
-        isOpen.value = true
-      })
+    const show = data => {
+      link.value = data
+      isOpen.value = true
     }
 
     const close = () => {
@@ -76,16 +58,14 @@ export default {
     }
 
     const download = () => {
-      window.open(pdfLink.value, '_blank').focus()
+      window.open(link.value, '_blank').focus()
     }
 
     return {
-      pdfLink,
-      filename,
+      link,
       isOpen,
       show,
       close,
-      numPages,
       download,
 
       icons: {

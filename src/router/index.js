@@ -53,6 +53,7 @@ const routes = [
     meta: {
       layout: 'blank',
       pageTitle: 'Conference',
+      requiresAuth: true,
     },
     props: true,
   },
